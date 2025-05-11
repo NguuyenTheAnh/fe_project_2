@@ -15,17 +15,21 @@ const LoginPage = () => {
 
         const res = await loginApi(email, password);
 
-        if (res && res.EC === 0) {
-            localStorage.setItem("access_token", res.access_token)
+        console.log(">>> check login: ", res);
+
+        if (res && res.statusCode === 201) {
+            localStorage.setItem("access_token", res.data.access_token);
             notification.success({
                 message: "LOGIN USER",
                 description: "Success"
             });
             setAuth({
                 isAuthenticated: true,
-                user: {
+                account: {
+                    account_id: res?.user?.account_id ?? "",
+                    role: res?.user?.role ?? "",
                     email: res?.user?.email ?? "",
-                    name: res?.user?.name ?? ""
+
                 }
             })
             navigate("/");
@@ -33,7 +37,7 @@ const LoginPage = () => {
         } else {
             notification.error({
                 message: "LOGIN USER",
-                description: res?.EM ?? "error"
+                description: "Password or email is incorrect"
             })
         }
 

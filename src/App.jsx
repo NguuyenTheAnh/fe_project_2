@@ -12,14 +12,15 @@ function App() {
   useEffect(() => {
     const fetchAccount = async () => {
       setAppLoading(true);
-      const res = await axios.get(`/v1/api/account`);
-      if (res && !res.message) {
+      const res = await axios.get(`/api/v1/auth/profile`);
+      if (res && res.statusCode === 200) {
         setAuth({
           isAuthenticated: true,
-          user: {
-            email: res.email,
-            name: res.name
-          }
+          account: {
+            account_id: res?.data?.account_id ?? "",
+            email: res?.data?.email ?? "",
+            role: res?.data?.role ?? ""
+          },
         })
       }
       setAppLoading(false);

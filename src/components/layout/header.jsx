@@ -3,6 +3,7 @@ import { UsergroupAddOutlined, HomeOutlined, SettingOutlined } from '@ant-design
 import { Menu } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/auth.context';
+import { logoutApi } from '../../util/api';
 
 const Header = () => {
 
@@ -22,20 +23,22 @@ const Header = () => {
         }] : []),
 
         {
-            label: `Welcome ${auth?.user?.email ?? ""}`,
+            label: `Welcome ${auth?.account?.email ?? ""}`,
             key: 'SubMenu',
             icon: <SettingOutlined />,
             children: [
                 ...(auth.isAuthenticated ? [{
-                    label: <span onClick={() => {
+                    label: <span onClick={async () => {
+                        await logoutApi();
                         localStorage.clear("access_token");
                         setCurrent("home");
                         setAuth({
                             isAuthenticated: false,
-                            user: {
+                            account: {
+                                account_id: "",
                                 email: "",
-                                name: ""
-                            }
+                                role: ""
+                            },
                         })
                         navigate("/");
 
