@@ -12,6 +12,15 @@ import UserPage from './pages/user.jsx';
 import HomePage from './pages/home.jsx';
 import LoginPage from './pages/login.jsx';
 import { AuthWrapper } from './components/context/auth.context.jsx';
+import ManagementPage from './pages/management.jsx';
+import Dashboard from './Dashboard.jsx';
+import MainDashboard from './pages/mainDashboard.jsx';
+import TablesDashboard from './pages/tablesDashboard.jsx';
+import DishesDashboard from './pages/dishesDashboard.jsx';
+import OrdersDashboard from './pages/ordersDashboard.jsx';
+import PaymentsDashboard from './pages/paymentsDashboard.jsx';
+import ProfileSettings from './pages/profileSettings.jsx';
+
 
 const router = createBrowserRouter([
   {
@@ -23,9 +32,39 @@ const router = createBrowserRouter([
         element: <HomePage />
       },
       {
-        path: "user",
-        element: <UserPage />
+        path: "managements",
+        element: <ManagementPage />
       },
+      {
+        path: "profile-settings",
+        element: <ProfileSettings />
+      }
+    ]
+  },
+  {
+    path: "dashboard",
+    element: <Dashboard />,
+    children: [
+      {
+        index: true,
+        element: <MainDashboard />
+      },
+      {
+        path: "tables",
+        element: <TablesDashboard />
+      },
+      {
+        path: "dishes",
+        element: <DishesDashboard />
+      },
+      {
+        path: "orders",
+        element: <OrdersDashboard />
+      },
+      {
+        path: "payments",
+        element: <PaymentsDashboard />
+      }
     ]
   },
   {

@@ -19,7 +19,9 @@ function App() {
           account: {
             account_id: res?.data?.account_id ?? "",
             email: res?.data?.email ?? "",
-            role: res?.data?.role ?? ""
+            role: res?.data?.role ?? "",
+            phone: res?.data?.phone ?? "",
+            name: res?.data?.name ?? "",
           },
         })
       }

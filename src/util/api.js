@@ -33,10 +33,16 @@ const getUserApi = () => {
     return axios.get(URL_API)
 }
 
+const updateAccountApi = (accountId, data) => {
+    const URL_API = `/api/v1/account/${accountId}`;
+    return axios.patch(URL_API, data);
+}
+
 export {
     createUserApi,
     loginApi,
     getUserApi,
     logoutApi,
-    refreshTokenApi
+    refreshTokenApi,
+    updateAccountApi
 }
