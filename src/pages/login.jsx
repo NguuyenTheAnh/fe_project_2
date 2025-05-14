@@ -19,7 +19,6 @@ import {
 import { styled } from "@mui/system";
 import { useNavigate } from 'react-router-dom';
 import { notification } from "antd";
-import '../styles/register.css';
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash, FaGoogle } from "react-icons/fa";
 import { loginApi } from "../util/api";
 import { AuthContext } from "../components/context/auth.context";
@@ -127,9 +126,9 @@ const LoginPage = () => {
     }
 
     return (
-        <StyledContainer>
+        <StyledContainer maxWidth="xl">
             <Logo
-                src="../public/logo_project2.png"
+                src="/logo_project2.png"
                 alt="Company Logo"
             />
             <StyledCard>

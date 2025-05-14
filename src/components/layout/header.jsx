@@ -101,7 +101,7 @@ const Header = () => {
         >
             <Box sx={{ p: 2 }}>
                 <Logo
-                    src="../public/logo_project2.png"
+                    src="/logo_project2.png"
                     alt="Restaurant Logo"
                     onError={(e) => {
                         e.target.src = "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4";
@@ -145,7 +145,7 @@ const Header = () => {
                         ) : null}
 
                         <Logo
-                            src="../public/logo_project2.png"
+                            src="/logo_project2.png"
                             alt="Restaurant Logo"
                             onError={(e) => {
                                 e.target.src = "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4";
@@ -174,7 +174,7 @@ const Header = () => {
                             <IconButton onClick={handleProfileClick} sx={{ p: 0 }}>
                                 <Avatar
                                     alt="User Profile"
-                                    src="../public/avatar_user.png"
+                                    src="/avatar_user.png"
                                 />
                             </IconButton>
                             <Menu

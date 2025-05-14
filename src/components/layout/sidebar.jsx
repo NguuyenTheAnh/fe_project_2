@@ -127,7 +127,7 @@ const Sidebar = () => {
         <StyledDrawer variant="permanent" anchor="left">
             <LogoContainer>
                 <LogoImg
-                    src="../public/logo_project2.png" // Ensure this path is correct
+                    src="/logo_project2.png" // Ensure this path is correct
                     alt="Company Logo"
                     onError={(e) => { e.target.style.display = 'none'; /* Hide if logo fails */ }}
                     onClick={handleClickLogo}
