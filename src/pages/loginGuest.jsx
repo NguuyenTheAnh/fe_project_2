@@ -17,11 +17,14 @@ import {
     MenuItem,
 } from "@mui/material";
 import { styled } from "@mui/system";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { notification } from "antd";
-import { FaEnvelope, FaLock, FaEye, FaEyeSlash, FaGoogle } from "react-icons/fa";
+import { FaEnvelope, FaLock, FaEye, FaEyeSlash, FaGoogle, FaUser } from "react-icons/fa";
 import { loginApi } from "../util/api";
 import { AuthContext } from "../components/context/auth.context";
+import { loginGuestApi } from "../util/apiGuest";
+import Guest from "../Guest";
+import { GuestAuthContext } from "../components/context/guest.context";
 
 // Styled components
 const StyledContainer = styled(Container)(({ theme }) => (({
@@ -66,44 +69,47 @@ const StyledButton = styled(Button)({
 });
 
 // Main component
-const LoginPage = () => {
+const LoginGuestPage = () => {
     const navigate = useNavigate();
-    const { setAuth } = useContext(AuthContext);
+    const { setGuestAuth } = useContext(GuestAuthContext);
     const [formData, setFormData] = useState({
-        email: "",
-        password: ""
+        guest_name: ""
     });
-    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    //Get table id
+    const [searchParams] = useSearchParams();
+    const tableId = searchParams.get('table_id');
 
     // Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (Object.values(formData).every(Boolean)) {
             setLoading(true);
-            const { email, password } = formData;
+            const { guest_name } = formData;
             try {
-                const res = await loginApi(email, password);
-                console.log("Response login api:", res);
+                const res = await loginGuestApi(guest_name, tableId);
                 if (res && res.statusCode === 201) {
-                    localStorage.setItem("access_token", res.data.access_token);
+                    localStorage.setItem("access_token_guest", res.data.access_token_guest);
                     notification.success({
-                        message: "LOGIN USER",
+                        message: "LOGIN GUEST",
                         description: "Successfully logged in"
                     });
-                    setAuth({
-                        isAuthenticated: true,
-                        account: {
-                            account_id: res?.data?.user?.account_id ?? "",
-                            role: res?.data?.user?.role ?? "",
-                            email: res?.data?.user?.email ?? "",
+                    setGuestAuth({
+                        isGuestAuthenticated: true,
+                        guest: {
+                            guest_id: res?.data?.guest?.guest_id ?? "",
+                            guest_name: res?.data?.guest?.guest_name ?? "",
+                            table_id: res?.data?.guest?.table_id ?? "",
+                            cart_id: res?.data?.guest?.cart_id ?? "",
+                            table_name: res?.data?.guest?.table?.table_name ?? "",
                         }
                     })
-                    navigate("/");
+                    navigate(`/guest?table_id=${tableId}`);
                 } else {
                     notification.error({
-                        message: "LOGIN USER",
-                        description: "Password or email is incorrect"
+                        message: "LOGIN GUEST",
+                        description: "Error login guest"
                     })
                 }
             } catch (error) {
@@ -134,78 +140,38 @@ const LoginPage = () => {
             />
             <StyledCard>
                 <Typography variant="h4" align="center" gutterBottom sx={{ color: "#D3212D" }}>
-                    User Login
+                    Guest Name
                 </Typography>
 
                 <form onSubmit={handleSubmit}>
                     <TextField
                         fullWidth
                         margin="normal"
-                        name="email"
-                        label="Email"
+                        name="guest_name"
+                        label="Guest Name"
                         variant="outlined"
                         value={formData.email}
                         onChange={handleChange}
                         InputProps={{
                             startAdornment: (
                                 <InputAdornment position="start">
-                                    <FaEnvelope color="#D3212D" />
+                                    <FaUser color="#D3212D" />
                                 </InputAdornment>
                             ),
                         }}
                     />
-
-                    <TextField
-                        fullWidth
-                        margin="normal"
-                        name="password"
-                        label="Password"
-                        type={showPassword ? "text" : "password"}
-                        variant="outlined"
-                        value={formData.password}
-                        onChange={handleChange}
-                        InputProps={{
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <FaLock color="#D3212D" />
-                                </InputAdornment>
-                            ),
-                            endAdornment: (
-                                <InputAdornment position="end">
-                                    <IconButton
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        edge="end"
-                                    >
-                                        {showPassword ? <FaEyeSlash /> : <FaEye />}
-                                    </IconButton>
-                                </InputAdornment>
-                            ),
-                        }}
-                    />
-
                     <StyledButton
                         type="submit"
                         fullWidth
                         disabled={loading || !Object.values(formData).every(Boolean)}
                         sx={{ mt: 3, mb: 2 }}
                     >
-                        {loading ? "Signing in Account..." : "Sign in"}
+                        {loading ? "Waiting..." : "Next"}
                     </StyledButton>
-
-                    <Typography align="center" sx={{ mt: 2 }}>
-                        Don't you have an account?{" "}
-                        <Button
-                            color="primary"
-                            sx={{ textTransform: "none", color: "#D3212D" }}
-                            onClick={() => navigate("/register")}
-                        >
-                            Sign up
-                        </Button>
-                    </Typography>
                 </form>
             </StyledCard>
         </StyledContainer>
     );
 };
 
-export default LoginPage;
+export default LoginGuestPage;

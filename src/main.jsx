@@ -8,7 +8,6 @@ import {
   RouterProvider,
 } from "react-router-dom";
 import RegisterPage from './pages/register.jsx';
-import UserPage from './pages/user.jsx';
 import HomePage from './pages/home.jsx';
 import LoginPage from './pages/login.jsx';
 import { AuthWrapper } from './components/context/auth.context.jsx';
@@ -20,6 +19,10 @@ import DishesDashboard from './pages/dishesDashboard.jsx';
 import OrdersDashboard from './pages/ordersDashboard.jsx';
 import PaymentsDashboard from './pages/paymentsDashboard.jsx';
 import ProfileSettings from './pages/profileSettings.jsx';
+import Guest from './Guest.jsx';
+import GuestMain from './pages/guest/guestMain.jsx';
+import LoginGuestPage from './pages/loginGuest.jsx';
+import { GuestAuthWrapper } from './components/context/guest.context.jsx';
 
 
 const router = createBrowserRouter([
@@ -75,13 +78,30 @@ const router = createBrowserRouter([
     path: "login",
     element: <LoginPage />
   },
+  {
+    path: "guest",
+    element: <Guest />,
+    children: [
+      {
+        index: true,
+        element: <GuestMain />
+      },
+
+    ]
+  },
+  {
+    path: "login-guest",
+    element: <LoginGuestPage />
+  }
 ]);
 
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   // <React.StrictMode>
   <AuthWrapper>
-    <RouterProvider router={router} />
+    <GuestAuthWrapper>
+      <RouterProvider router={router} />
+    </GuestAuthWrapper>
   </AuthWrapper>
   // </React.StrictMode>,
 )

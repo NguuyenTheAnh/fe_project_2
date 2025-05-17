@@ -25,6 +25,9 @@ import {
     useMediaQuery,
     Container,
     Avatar,
+    Tooltip,
+    Link,
+    Snackbar,
 } from '@mui/material';
 import { styled } from '@mui/system';
 import {
@@ -40,14 +43,15 @@ import {
     FaMoneyBill,
     FaCheckCircle,
     FaTimesCircle,
-    FaHourglassHalf
+    FaHourglassHalf,
+    FaQrcode,
+    FaTimes,
+    FaCopy,
 } from 'react-icons/fa';
 import axios from 'axios';
 import { notification } from 'antd';
 import { createTableApi, deleteTableApi, getTableApi, updateTableApi } from '../util/apiTable';
-// Assuming you will create apiTable.js similar to apiDish.js
-// For now, using axios directly for PATCH
-// import { getTableApi, createTableApi, deleteTableApi, updateTableApi } from '../util/apiTable'; 
+import { QRCodeSVG } from 'qrcode.react';
 // Styled components with fixed dimensions
 const TableCardWrapper = styled(Box)(({ theme }) => ({
     width: '100%',
@@ -146,16 +150,27 @@ const CapacityChip = styled(Chip)({
     fontSize: '0.85rem',
 });
 
-const ActionButton = styled(Button)(({ color }) => ({
+const ActionButton = styled(Button)(({ color, variant = 'contained' }) => ({
     borderRadius: '8px',
     textTransform: 'none',
     minWidth: 'auto',
-    padding: '6px 12px',
-    backgroundColor: color === 'edit' ? '#4CAF50' : color === 'delete' ? '#F44336' : '#D3212D',
-    color: 'white',
-    '&:hover': {
-        backgroundColor: color === 'edit' ? '#3d8b40' : color === 'delete' ? '#d32f2f' : '#b71c1c',
-    },
+    padding: '6px 10px', // Slightly reduced padding for 3 buttons
+    fontSize: '0.8rem', // Slightly smaller font for 3 buttons
+    ...(variant === 'contained' && {
+        backgroundColor: color === 'edit' ? '#4CAF50' : color === 'delete' ? '#F44336' : '#D3212D', // Default to primary red
+        color: 'white',
+        '&:hover': {
+            backgroundColor: color === 'edit' ? '#3d8b40' : color === 'delete' ? '#d32f2f' : '#b71c1c',
+        },
+    }),
+    ...(variant === 'outlined' && {
+        borderColor: color === 'qr' ? '#D3212D' : theme.palette.grey[500],
+        color: color === 'qr' ? '#D3212D' : theme.palette.text.primary,
+        '&:hover': {
+            backgroundColor: color === 'qr' ? 'rgba(211, 33, 45, 0.08)' : 'rgba(0,0,0,0.04)',
+            borderColor: color === 'qr' ? '#D3212D' : theme.palette.grey[700],
+        },
+    }),
 }));
 
 const FilterContainer = styled(Box)(({ theme }) => ({
@@ -208,6 +223,14 @@ const InfoRow = styled(Box)({
     gap: '8px',
 });
 
+const QRCodeModalContent = styled(DialogContent)(({ theme }) => ({
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: theme.spacing(3),
+    gap: theme.spacing(2),
+}));
+
 const TablesDashboard = () => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -241,6 +264,12 @@ const TablesDashboard = () => {
     });
     const [formErrors, setFormErrors] = useState({});
     const [modalLoading, setModalLoading] = useState(false);
+
+    // QR Code Modal State
+    const [qrModalOpen, setQrModalOpen] = useState(false);
+    const [qrCodeValue, setQrCodeValue] = useState('');
+    const [qrTableInfo, setQrTableInfo] = useState(null);
+    const [snackbarOpen, setSnackbarOpen] = useState(false);
 
     // Fetch tables from API
     const fetchTables = async () => {
@@ -435,15 +464,44 @@ const TablesDashboard = () => {
 
     const getPaymentStatusIcon = (payment_status) => {
         switch (payment_status) {
-            case 'Paid':
-                return <FaCheckCircle color="#4CAF50" />;
-            case 'Unpaid':
-                return <FaTimesCircle color="#F44336" />;
-            case 'Pending':
-                return <FaHourglassHalf color="#FF9800" />;
-            default:
-                return null;
+            case 'Paid': return <FaCheckCircle color="#4CAF50" />;
+            case 'Unpaid': return <FaTimesCircle color="#F44336" />;
+            case 'Pending': return <FaHourglassHalf color="#FF9800" />;
+            default: return null;
         }
+    };
+
+    // QR Code Modal Handlers
+    const handleOpenQrModal = (table) => {
+        const frontendUrl = import.meta.env.VITE_FRONTEND_URL; // Fallback if env var is not set
+        const url = `${frontendUrl}/guest?table_id=${table.table_id}`;
+        setQrCodeValue(url);
+        setQrTableInfo(table);
+        setQrModalOpen(true);
+    };
+
+    const handleCloseQrModal = () => {
+        setQrModalOpen(false);
+        setQrCodeValue('');
+        setQrTableInfo(null);
+    };
+
+    const handleCopyToClipboard = () => {
+        navigator.clipboard.writeText(qrCodeValue)
+            .then(() => {
+                setSnackbarOpen(true);
+            })
+            .catch(err => {
+                console.error('Failed to copy URL: ', err);
+                notification.error({ message: 'Error', description: 'Failed to copy URL.' });
+            });
+    };
+
+    const handleSnackbarClose = (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        setSnackbarOpen(false);
     };
 
     return (
@@ -562,22 +620,37 @@ const TablesDashboard = () => {
                                             </InfoRow>
                                         </StyledCardContent>
                                         <StyledCardActions>
-                                            <ActionButton
-                                                size="small"
-                                                startIcon={<FaEdit />}
-                                                color="edit"
-                                                onClick={() => handleOpenModal(table)} // Open modal for editing
-                                            >
-                                                Edit
-                                            </ActionButton>
-                                            <ActionButton
-                                                size="small"
-                                                startIcon={<FaTrash />}
-                                                color="delete"
-                                                onClick={() => handleOpenDeleteDialog(table)}
-                                            >
-                                                Delete
-                                            </ActionButton>
+                                            <Tooltip title="Edit Table">
+                                                <ActionButton
+                                                    size="small"
+                                                    startIcon={<FaEdit />}
+                                                    color="edit"
+                                                    onClick={() => handleOpenModal(table)} // Open modal for editing
+                                                >
+                                                    Edit
+                                                </ActionButton>
+                                            </Tooltip>
+                                            <Tooltip title="QR Code">
+                                                <ActionButton
+                                                    size="small"
+                                                    startIcon={<FaQrcode />}
+                                                    variant="outlined"
+                                                    color="qr"
+                                                    onClick={() => handleOpenQrModal(table)}
+                                                >
+                                                    QR Code
+                                                </ActionButton>
+                                            </Tooltip>
+                                            <Tooltip title="Delete Table">
+                                                <ActionButton
+                                                    size="small"
+                                                    startIcon={<FaTrash />}
+                                                    color="delete"
+                                                    onClick={() => handleOpenDeleteDialog(table)}
+                                                >
+                                                    Delete
+                                                </ActionButton>
+                                            </Tooltip>
                                         </StyledCardActions>
                                     </StyledCard>
                                 </TableCardWrapper>
@@ -736,6 +809,41 @@ const TablesDashboard = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            {/* QR Code Modal */}
+            <Dialog open={qrModalOpen} onClose={handleCloseQrModal} PaperProps={{ sx: { borderRadius: '12px', padding: theme.spacing(1) } }}>
+                <DialogTitle sx={{ color: '#D3212D', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    QR Code for {qrTableInfo?.table_name || 'Table'}
+                    <IconButton onClick={handleCloseQrModal} size="small">
+                        <FaTimes />
+                    </IconButton>
+                </DialogTitle>
+                <QRCodeModalContent>
+                    {qrCodeValue && <QRCodeSVG value={qrCodeValue} size={256} level="H" includeMargin={true} />}
+                    <Typography variant="caption" sx={{ mt: 1, wordBreak: 'break-all' }}>
+                        Scan to order or view details.
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1, p: 1, border: '1px solid #eee', borderRadius: '8px', width: '100%' }}>
+                        <Link href={qrCodeValue} target="_blank" rel="noopener noreferrer" sx={{ flexGrow: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: theme.palette.primary.main }}>
+                            {qrCodeValue}
+                        </Link>
+                        <Tooltip title="Copy URL">
+                            <IconButton onClick={handleCopyToClipboard} size="small">
+                                <FaCopy />
+                            </IconButton>
+                        </Tooltip>
+                    </Box>
+                </QRCodeModalContent>
+                <DialogActions sx={{ padding: theme.spacing(1, 2, 2, 2) }}>
+                    <Button onClick={handleCloseQrModal} sx={{ color: 'gray' }}>Close</Button>
+                </DialogActions>
+            </Dialog>
+            <Snackbar
+                open={snackbarOpen}
+                autoHideDuration={3000}
+                onClose={handleSnackbarClose}
+                message="URL copied to clipboard!"
+            />
         </Container>
     );
 };
