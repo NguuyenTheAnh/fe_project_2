@@ -9,6 +9,7 @@ import {
     MenuItem,
     Typography,
     Container,
+    Badge,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { FaShoppingCart } from 'react-icons/fa';
@@ -45,7 +46,7 @@ const StyledIconButton = styled(IconButton)({
 const HeaderGuest = () => {
     const navigate = useNavigate();
     const [anchorEl, setAnchorEl] = useState(null);
-    const { guestAuth } = useContext(GuestAuthContext);
+    const { guestAuth, cartItemCount } = useContext(GuestAuthContext);
 
     const handleProfileClick = (event) => {
         setAnchorEl(event.currentTarget);
@@ -58,6 +59,10 @@ const HeaderGuest = () => {
     const handleLogoClick = () => {
         navigate('/guest');
     };
+
+    const handleCartClick = () => {
+        navigate('/guest/cart');
+    }
 
     return (
         <StyledAppBar position="static">
@@ -73,8 +78,10 @@ const HeaderGuest = () => {
 
                     {/* Icons on the right */}
                     <IconContainer>
-                        <StyledIconButton aria-label="shopping cart">
-                            <FaShoppingCart />
+                        <StyledIconButton aria-label="shopping cart" onClick={handleCartClick}>
+                            <Badge badgeContent={cartItemCount} color="error" overlap="circular">
+                                <FaShoppingCart />
+                            </Badge>
                         </StyledIconButton>
 
                         <StyledIconButton

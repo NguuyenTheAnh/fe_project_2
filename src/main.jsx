@@ -23,6 +23,7 @@ import Guest from './Guest.jsx';
 import GuestMain from './pages/guest/guestMain.jsx';
 import LoginGuestPage from './pages/loginGuest.jsx';
 import { GuestAuthWrapper } from './components/context/guest.context.jsx';
+import GuestCart from './pages/guest/guestCart.jsx';
 
 
 const router = createBrowserRouter([
@@ -86,7 +87,10 @@ const router = createBrowserRouter([
         index: true,
         element: <GuestMain />
       },
-
+      {
+        path: "cart",
+        element: <GuestCart />
+      }
     ]
   },
   {

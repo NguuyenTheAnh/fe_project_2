@@ -93,7 +93,8 @@ const LoginGuestPage = () => {
                     localStorage.setItem("access_token_guest", res.data.access_token_guest);
                     notification.success({
                         message: "LOGIN GUEST",
-                        description: "Successfully logged in"
+                        description: "Successfully logged in",
+                        placement: "bottomRight",
                     });
                     setGuestAuth({
                         isGuestAuthenticated: true,
@@ -109,14 +110,14 @@ const LoginGuestPage = () => {
                 } else {
                     notification.error({
                         message: "LOGIN GUEST",
-                        description: "Error login guest"
+                        description: "Error login guest", placement: "bottomRight",
                     })
                 }
             } catch (error) {
                 console.error('API error:', error);
                 notification.error({
                     message: "Sign in fail",
-                    description: "Sign in again"
+                    description: "Sign in again", placement: "bottomRight",
                 })
             } finally {
                 setTimeout(() => {
