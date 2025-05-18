@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react'; // Added useContext
+import React, { useState, useEffect, useContext } from 'react';
 import {
     Container,
     Box,
@@ -10,8 +10,8 @@ import {
     Avatar,
     Paper,
     Grid,
-    CircularProgress, // Added for loading state
-    Alert, // Added for error state
+    CircularProgress,
+    Alert,
     useTheme,
     useMediaQuery,
     Divider,
@@ -19,9 +19,10 @@ import {
 import { styled } from '@mui/material/styles';
 import { FaPlus, FaMinus, FaTrash, FaShoppingCart, FaArrowLeft } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import { GuestAuthContext } from '../../components/context/guest.context'; // Import context
-import { getGuestCartApi, updateGuestCartItemApi, removeGuestCartItemApi } from '../../util/apiGuest'; // Import API functions
+import { GuestAuthContext } from '../../components/context/guest.context';
+import { getGuestCartApi, updateGuestCartItemApi, removeGuestCartItemApi, orderGuestApi } from '../../util/apiGuest';
 import { notification } from 'antd';
+
 const IMAGE_BASE_URL = `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080'}/images/`;
 
 const getImageUrl = (imageName) => {
@@ -202,11 +203,12 @@ const GuestCart = () => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const navigate = useNavigate();
-    const { cartTotalAmount, fetchAndUpdateCartData } = useContext(GuestAuthContext);
+    const { guestAuth, cartTotalAmount, fetchAndUpdateCartData } = useContext(GuestAuthContext);
 
     const [cartItems, setCartItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [checkoutLoading, setCheckoutLoading] = useState(false);
 
     const fetchCart = async () => {
         setLoading(true);
@@ -215,8 +217,8 @@ const GuestCart = () => {
             const res = await getGuestCartApi();
             if (res && res.data && res.statusCode === 200) {
                 const transformedItems = res.data.map(item => ({
-                    id: item.dish_id, // Use dish_id as the unique key for items
-                    cart_id: item.cart_id, // Keep cart_id if needed for other operations
+                    id: item.dish_id,
+                    cart_id: item.cart_id,
                     name: item.dish.dish_name,
                     image_name: item.dish.image_name,
                     price: parseFloat(item.dish.price),
@@ -224,18 +226,16 @@ const GuestCart = () => {
                     category: item.dish.category,
                 }));
                 setCartItems(transformedItems);
-                // Context update is now handled by fetchAndUpdateCartData in context itself
-                // or can be called here if more direct control is needed after this specific fetch
-                await fetchAndUpdateCartData(); // Ensure context is also updated
+                await fetchAndUpdateCartData();
             } else {
-                setCartItems([]); // Set to empty if no data or error
-                await fetchAndUpdateCartData(); // Update context to reflect empty cart
+                setCartItems([]);
+                await fetchAndUpdateCartData();
             }
         } catch (err) {
             console.error("Failed to fetch cart items:", err);
             setError("Could not load your cart. Please try again later.");
             setCartItems([]);
-            await fetchAndUpdateCartData(); // Update context to reflect empty/error state
+            await fetchAndUpdateCartData();
         } finally {
             setLoading(false);
         }
@@ -243,14 +243,12 @@ const GuestCart = () => {
 
     useEffect(() => {
         fetchCart();
-    }, []); // Fetch cart on component mount
-
+    }, []);
     const handleQuantityChange = async (dishId, newQuantity) => {
-        if (newQuantity < 1) { // Prevent quantity from going below 1, effectively removing if 0
+        if (newQuantity < 1) {
             handleRemoveItem(dishId);
             return;
         }
-        // Optimistic update
         const oldCartItems = [...cartItems];
         try {
             setCartItems(prevItems =>
@@ -259,44 +257,51 @@ const GuestCart = () => {
                 )
             );
             await updateGuestCartItemApi(dishId, newQuantity);
-            await fetchAndUpdateCartData(); // Re-sync with backend and update context
-            // No need to call fetchCart() again if fetchAndUpdateCartData() handles it
+            await fetchAndUpdateCartData();
         } catch (err) {
             notification.error({ message: "Failed to update quantity", placement: "bottomRight", });
-            // Rollback optimistic update if API call fails
             setCartItems(oldCartItems);
             console.error("Failed to update cart item quantity:", err);
         }
     };
 
     const handleRemoveItem = async (dishId) => {
-        // Optimistic update
         const oldCartItems = [...cartItems];
         try {
             setCartItems(prevItems => prevItems.filter(item => item.id !== dishId));
             await removeGuestCartItemApi(dishId);
-            await fetchAndUpdateCartData(); // Re-sync and update context
+            await fetchAndUpdateCartData();
             notification.success({ message: "Item removed from cart", placement: "bottomRight", });
         } catch (err) {
             notification.error({ message: "Failed to remove item", placement: "bottomRight", });
-            // Rollback optimistic update if API call fails
             setCartItems(oldCartItems);
             console.error("Failed to remove cart item:", err);
         }
     };
 
-    const handleCheckout = () => {
-        console.log('Proceed to checkout with items:', cartItems);
-        // Navigate to an actual checkout page or implement order placement
-        notification.info({ message: "Checkout process not yet implemented.", placement: "bottomRight", })
+    const handleCheckout = async () => {
+        if (cartItems.length === 0) {
+            notification.warn({ message: "Your cart is empty!", placement: "bottomRight" });
+            return;
+        }
+        setCheckoutLoading(true);
+        try {
+            const response = await orderGuestApi();
+            if (response && response.statusCode === 201 && response.data && response.data.order_url) {
+                notification.success({ message: "Redirecting to payment...", placement: "bottomRight" });
+                window.location.href = response.data.order_url;
+            } else {
+                notification.error({ message: `Checkout failed: ${response?.message || 'Unknown error'}`, placement: "bottomRight" });
+            }
+        } catch (err) {
+            console.error("Checkout error:", err);
+            notification.error({ message: "Checkout failed. Please try again.", placement: "bottomRight" });
+        } finally {
+            setCheckoutLoading(false);
+        }
     };
 
     const calculateItemTotal = (item) => item.price * item.quantity;
-
-    // This local calculation is fine for display, but total from context is source of truth for badge
-    const calculateDisplayTotal = () => {
-        return cartItems.reduce((total, item) => total + calculateItemTotal(item), 0);
-    };
 
     if (loading) {
         return (
@@ -400,7 +405,6 @@ const GuestCart = () => {
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                                 <Typography variant="body1" sx={{ fontWeight: '500' }}>Subtotal:</Typography>
                                 <Typography variant="body1" sx={{ fontWeight: '500' }}>
-                                    {/* Use cartTotalAmount from context for consistency with badge */}
                                     {cartTotalAmount.toLocaleString('vi-VN')}đ
                                 </Typography>
                             </Box>
@@ -417,8 +421,11 @@ const GuestCart = () => {
                                     {cartTotalAmount.toLocaleString('vi-VN')}đ
                                 </TotalPriceText>
                             </Box>
-                            <CheckoutButtonStyled onClick={handleCheckout}>
-                                Proceed to Checkout
+                            <CheckoutButtonStyled
+                                onClick={handleCheckout}
+                                disabled={checkoutLoading || cartItems.length === 0}
+                            >
+                                {checkoutLoading ? <CircularProgress size={24} color="inherit" /> : 'Proceed to Checkout'}
                             </CheckoutButtonStyled>
                         </SummaryPaper>
                     </Grid>
