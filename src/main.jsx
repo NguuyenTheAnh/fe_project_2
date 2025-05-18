@@ -24,6 +24,7 @@ import GuestMain from './pages/guest/guestMain.jsx';
 import LoginGuestPage from './pages/loginGuest.jsx';
 import { GuestAuthWrapper } from './components/context/guest.context.jsx';
 import GuestCart from './pages/guest/guestCart.jsx';
+import Wish from './pages/wish.jsx';
 
 
 const router = createBrowserRouter([
@@ -96,6 +97,10 @@ const router = createBrowserRouter([
   {
     path: "login-guest",
     element: <LoginGuestPage />
+  },
+  {
+    path: "wish",
+    element: <Wish />
   }
 ]);
 
