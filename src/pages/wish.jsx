@@ -7,6 +7,7 @@ import {
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { deleteRefreshTokenApi } from "../util/apiGuest";
 
 // Styled components
 const StyledContainer = styled(Container)(({ theme }) => ({
@@ -61,13 +62,6 @@ const OrderMoreButton = styled(Button)(({ theme }) => ({
     },
 }));
 
-// Utility function to delete a cookie
-// Note: For robust cookie deletion, ensure path and domain match how it was set.
-// If HttpOnly, it cannot be deleted from client-side JS.
-const deleteCookie = (name) => {
-    document.cookie = name + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-}
-
 // Main component
 const WishPage = () => {
     const navigate = useNavigate();
@@ -77,7 +71,7 @@ const WishPage = () => {
     const handleOrderMore = () => {
         // Remove tokens
         localStorage.removeItem('access_token_guest');
-        deleteCookie('refresh_token_guest'); // Assuming the cookie is named 'refresh_token_guest'
+        deleteRefreshTokenApi();
 
         // Navigate to guest page with table_id
         if (tableId) {

@@ -27,3 +27,7 @@ export const removeGuestCartItemApi = async (dish_id) => {
 export const orderGuestApi = async () => {
     return axiosInstance.post("/api/v1/guest-auth/order");
 };
+
+export const deleteRefreshTokenApi = async () => {
+    return axiosInstance.get('/api/v1/guest-auth/cookie/delete');
+}
