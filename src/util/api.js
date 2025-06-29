@@ -36,6 +36,21 @@ const updateAccountApi = (accountId, data) => {
     return axios.patch(URL_API, data);
 }
 
+const deleteAccountApi = (accountId) => {
+    const URL_API = `/api/v1/account/${accountId}`;
+    return axios.delete(URL_API);
+}
+
+const getAccountApi = (params) => {
+    const URL_API = "/api/v1/account";
+    return axios.get(URL_API, { params });
+}
+
+const getAccountByIdApi = (accountId) => {
+    const URL_API = `/api/v1/account/${accountId}`;
+    return axios.get(URL_API);
+}
+
 // Order APIs
 const getOrderApi = (params) => {
     const URL_API = "/api/v1/order";
@@ -114,6 +129,9 @@ export {
     logoutApi,
     refreshTokenApi,
     updateAccountApi,
+    getAccountApi,
+    getAccountByIdApi,
+    deleteAccountApi,
     // Orders
     getOrderApi,
     getOrderByIdApi,
