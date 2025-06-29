@@ -100,14 +100,53 @@ const NoResultsContainer = styled(Box)(({ theme }) => ({
     borderRadius: '12px',
     backgroundColor: alpha(theme.palette.grey[100], 0.5)
 }));
+
+const FilterContainer = styled(Box)(({ theme }) => ({
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: theme.spacing(2),
+    marginBottom: theme.spacing(3),
+    padding: theme.spacing(2),
+    backgroundColor: 'white',
+    borderRadius: '12px',
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+    alignItems: 'center',
+}));
+
+const NoTransactionsBox = styled(Box)(({ theme }) => ({
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing(8, 2),
+    textAlign: 'center',
+    color: theme.palette.text.secondary,
+    minHeight: '400px',
+    border: `2px dashed ${theme.palette.grey[300]}`,
+    borderRadius: '12px',
+    backgroundColor: alpha(theme.palette.grey[50], 0.8),
+}));
 const PaymentsDashboard = () => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     const [transactions, setTransactions] = useState([]);
+    const [filteredTransactions, setFilteredTransactions] = useState([]);
     const [tables, setTables] = useState([]); // For table_id dropdown
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    // Filter states
+    const currentDate = new Date();
+    const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
+    const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1); // 1-12
+
+    // Generate years array (current year and 4 previous years)
+    const availableYears = Array.from({ length: 5 }, (_, i) => currentDate.getFullYear() - i);
+    const availableMonths = Array.from({ length: 12 }, (_, i) => ({
+        value: i + 1,
+        label: new Date(2024, i).toLocaleString('en-US', { month: 'long' })
+    }));
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
@@ -123,7 +162,8 @@ const PaymentsDashboard = () => {
     const fetchTransactions = useCallback(async () => {
         setLoading(true); setError(null);
         try {
-            const response = await getTransactionsApi(); // No filters for now
+            // You can add year/month filters to API call if backend supports it
+            const response = await getTransactionsApi(); // No filters for now, filtering on frontend
             if (response && response.data && response.statusCode === 200) {
                 setTransactions(Array.isArray(response.data) ? response.data : []);
             } else {
@@ -135,7 +175,7 @@ const PaymentsDashboard = () => {
             notification.error({ message: 'Error fetching transactions', description: err.message || 'Could not load transactions.', placement: "bottomRight" });
             setTransactions([]);
         } finally { setLoading(false); }
-    }, []);
+    }, []); // Removed dependencies since we're not filtering in API yet
 
     const fetchTablesForSelect = async () => {
         try {
@@ -148,6 +188,32 @@ const PaymentsDashboard = () => {
     };
 
     useEffect(() => { fetchTransactions(); fetchTablesForSelect(); }, [fetchTransactions]);
+
+    // Filter transactions based on selected year and month
+    useEffect(() => {
+        if (transactions.length > 0) {
+            const filtered = transactions.filter(transaction => {
+                if (!transaction.transaction_date) return false;
+
+                const transactionDate = new Date(Number(transaction.transaction_date));
+                const transactionYear = transactionDate.getFullYear();
+                const transactionMonth = transactionDate.getMonth() + 1; // 1-12
+
+                return transactionYear === selectedYear && transactionMonth === selectedMonth;
+            });
+            setFilteredTransactions(filtered);
+        } else {
+            setFilteredTransactions([]);
+        }
+    }, [transactions, selectedYear, selectedMonth]);
+
+    const handleYearChange = (event) => {
+        setSelectedYear(event.target.value);
+    };
+
+    const handleMonthChange = (event) => {
+        setSelectedMonth(event.target.value);
+    };
 
     const resetFormData = () => {
         setFormData({
@@ -248,7 +314,7 @@ const PaymentsDashboard = () => {
             });
         } catch (e) { return 'Invalid Date'; }
     };
-    const formatCurrency = (amount) => `${Number(amount).toLocaleString('vi-VN')}đ`;
+    const formatCurrency = (amount) => `${Number(amount).toLocaleString('en-US')}đ`;
 
     if (loading) {
         return (
@@ -266,18 +332,76 @@ const PaymentsDashboard = () => {
                 </Typography>
             </HeaderBox>
 
+            {/* Filter Section */}
+            <FilterContainer>
+                <Typography variant="h6" sx={{ color: '#D3212D', fontWeight: '600', mr: 2 }}>
+                    Filter by:
+                </Typography>
+                <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: '120px' } }}>
+                    <InputLabel>Year</InputLabel>
+                    <Select
+                        value={selectedYear}
+                        label="Year"
+                        onChange={handleYearChange}
+                        sx={{ borderRadius: '8px' }}
+                    >
+                        {availableYears.map(year => (
+                            <MenuItem key={year} value={year}>{year}</MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+                <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: '150px' } }}>
+                    <InputLabel>Month</InputLabel>
+                    <Select
+                        value={selectedMonth}
+                        label="Month"
+                        onChange={handleMonthChange}
+                        sx={{ borderRadius: '8px' }}
+                    >
+                        {availableMonths.map(month => (
+                            <MenuItem key={month.value} value={month.value}>
+                                {month.label}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+                <Typography variant="body2" sx={{ color: 'text.secondary', ml: 'auto' }}>
+                    {filteredTransactions.length} transaction(s) found for {availableMonths.find(m => m.value === selectedMonth)?.label} {selectedYear}
+                    {filteredTransactions.length > 0 && (
+                        <Box component="span" sx={{ display: 'block', mt: 0.5, fontWeight: '500' }}>
+                            Total In: {formatCurrency(filteredTransactions.reduce((sum, t) => sum + Number(t.amount_in || 0), 0))} |
+                            Total Out: {formatCurrency(filteredTransactions.reduce((sum, t) => sum + Number(t.amount_out || 0), 0))}
+                        </Box>
+                    )}
+                </Typography>
+            </FilterContainer>
+
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-            {transactions.length === 0 && !loading && !error && (
-                <NoResultsContainer>
-                    <FaDollarSign size={60} color={theme.palette.grey[400]} style={{ marginBottom: theme.spacing(2) }} />
-                    <Typography variant="h6" sx={{ color: 'text.secondary', mb: 1 }}>No transactions found.</Typography>
-                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>Click "Add Transaction" to get started.</Typography>
-                </NoResultsContainer>
+            {filteredTransactions.length === 0 && !loading && !error && (
+                <NoTransactionsBox>
+                    <FaDollarSign size={80} color={theme.palette.grey[400]} style={{ marginBottom: theme.spacing(3) }} />
+                    <Typography variant="h5" sx={{ color: '#D3212D', fontWeight: 'bold', mb: 2 }}>
+                        No Transactions Found
+                    </Typography>
+                    <Typography variant="h6" sx={{ color: 'text.secondary', mb: 1 }}>
+                        {availableMonths.find(m => m.value === selectedMonth)?.label} {selectedYear}
+                    </Typography>
+                    <Typography variant="body1" sx={{ color: 'text.secondary', mb: 3, maxWidth: '400px' }}>
+                        There are no payment transactions recorded for the selected period.
+                        Try selecting a different month or year, or check back later.
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: theme.palette.info.main }}>
+                        <FaCalendarDay />
+                        <Typography variant="body2">
+                            Current filter: {availableMonths.find(m => m.value === selectedMonth)?.label} {selectedYear}
+                        </Typography>
+                    </Box>
+                </NoTransactionsBox>
             )}
 
             <List sx={{ backgroundColor: 'transparent' }}>
-                {transactions.map((transaction) => (
+                {filteredTransactions.map((transaction) => (
                     <TransactionListItem key={transaction.transaction_id} elevation={2}>
                         <Grid container spacing={2} alignItems="center" justifyContent={"space-between"}>
                             <Grid item xs={12} md={9}>

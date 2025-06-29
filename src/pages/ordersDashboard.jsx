@@ -35,7 +35,7 @@ import {
 } from 'react-icons/fa';
 import CloseIcon from '@mui/icons-material/Close';
 import { notification } from 'antd';
-import { getOrderApi, createOrderApi, updateOrderApi, deleteOrderApi, getGuestsApi, getTablesApi, getStaffApi } from '../util/api';
+import { getOrderApi, getOrderByIdApi, createOrderApi, updateOrderApi, deleteOrderApi, getGuestsApi, getTablesApi, getStaffApi } from '../util/api';
 import { AuthContext } from '../components/context/auth.context';
 
 // Styled Components
@@ -189,6 +189,8 @@ const OrdersDashboard = () => {
     const [formErrors, setFormErrors] = useState({});
     const [modalLoading, setModalLoading] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [detailModalLoading, setDetailModalLoading] = useState(false);
+    const [orderDetails, setOrderDetails] = useState(null);
     const [isProcessConfirmOpen, setIsProcessConfirmOpen] = useState(false);
     const [orderToProcess, setOrderToProcess] = useState(null);
 
@@ -325,8 +327,39 @@ const OrdersDashboard = () => {
         }
     };
 
-    const handleOpenDetailModal = (order) => { setCurrentOrder(order); setIsDetailModalOpen(true); };
-    const handleCloseDetailModal = () => { setIsDetailModalOpen(false); setCurrentOrder(null); };
+    const handleOpenDetailModal = async (order) => {
+        setCurrentOrder(order);
+        setIsDetailModalOpen(true);
+        setDetailModalLoading(true);
+        setOrderDetails(null);
+
+        try {
+            const response = await getOrderByIdApi(order.order_id);
+            if (response && response.statusCode === 200) {
+                setOrderDetails(response.data);
+            } else {
+                notification.error({
+                    message: 'Error',
+                    description: 'Could not load order details.'
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching order details:', error);
+            notification.error({
+                message: 'Error',
+                description: 'Failed to fetch order details.'
+            });
+        } finally {
+            setDetailModalLoading(false);
+        }
+    };
+
+    const handleCloseDetailModal = () => {
+        setIsDetailModalOpen(false);
+        setCurrentOrder(null);
+        setOrderDetails(null);
+        setDetailModalLoading(false);
+    };
 
     const initiateProcessOrder = (order) => {
         if (order.order_handler_id) {
@@ -577,32 +610,87 @@ const OrdersDashboard = () => {
             )}
 
             {currentOrder && isDetailModalOpen && (
-                <Dialog open={isDetailModalOpen} onClose={handleCloseDetailModal} PaperProps={{ sx: { borderRadius: '12px', padding: theme.spacing(1) } }} maxWidth="sm" fullWidth>
+                <Dialog open={isDetailModalOpen} onClose={handleCloseDetailModal} PaperProps={{ sx: { borderRadius: '12px', padding: theme.spacing(1) } }} maxWidth="md" fullWidth>
                     <DialogTitle sx={{ color: '#D3212D', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 'bold' }}>
                         Order Details #{currentOrder.order_id}
                         <IconButton onClick={handleCloseDetailModal}><CloseIcon /></IconButton>
                     </DialogTitle>
                     <DialogContent dividers sx={{ p: 3, backgroundColor: '#FFFFFF' }}>
-                        <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: '600' }}>Order Information</Typography>
-                        <Typography><strong>Status:</strong> <StatusChip label={currentOrder.status} status={currentOrder.status} size="small" /></Typography>
-                        <Typography><strong>Total:</strong> {Number(currentOrder.total_order).toLocaleString('vi-VN')}đ</Typography>
-                        <Typography><strong>Options:</strong> {currentOrder.options || 'N/A'}</Typography>
-                        <Typography><strong>Created At:</strong> {formatDate(currentOrder.created_at)}</Typography>
-                        <Typography><strong>Updated At:</strong> {formatDate(currentOrder.updated_at)}</Typography>
-                        <Divider sx={{ my: 2 }} />
-                        <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: '600' }}>Guest Details</Typography>
-                        <Typography><strong>Name:</strong> {currentOrder.guest?.guest_name || 'N/A'}</Typography>
-                        <Typography><strong>Guest ID:</strong> {currentOrder.guest_id}</Typography>
-                        <Divider sx={{ my: 2 }} />
-                        <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: '600' }}>Table Details</Typography>
-                        <Typography><strong>Name:</strong> {currentOrder.table?.table_name || 'N/A'}</Typography>
-                        <Typography><strong>Table ID:</strong> {currentOrder.table_id}</Typography>
-                        <Typography><strong>Capacity:</strong> {currentOrder.table?.capacity || 'N/A'}</Typography>
-                        <Typography><strong>Table Status:</strong> {currentOrder.table?.status || 'N/A'}</Typography>
-                        <Divider sx={{ my: 2 }} />
-                        <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: '600' }}>Order Handler</Typography>
-                        <Typography><strong>Email:</strong> {currentOrder.orderHandler?.email || 'N/A'}</Typography>
-                        <Typography><strong>Handler ID:</strong> {currentOrder.order_handler_id || 'N/A'}</Typography>
+                        {detailModalLoading ? (
+                            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                                <CircularProgress sx={{ color: '#D3212D' }} />
+                            </Box>
+                        ) : orderDetails ? (
+                            <>
+                                <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: '600' }}>Order Information</Typography>
+                                <Typography><strong>Status:</strong> <StatusChip label={orderDetails.status} status={orderDetails.status} size="small" /></Typography>
+                                <Typography><strong>Total:</strong> {Number(orderDetails.total_order).toLocaleString('vi-VN')}đ</Typography>
+                                <Typography><strong>Options:</strong> {orderDetails.options || 'N/A'}</Typography>
+                                <Typography><strong>Created At:</strong> {formatDate(orderDetails.created_at)}</Typography>
+                                <Typography><strong>Updated At:</strong> {formatDate(orderDetails.updated_at)}</Typography>
+
+                                <Divider sx={{ my: 2 }} />
+                                <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: '600' }}>Order Items</Typography>
+                                {orderDetails.guest?.cart?.cartItems && orderDetails.guest.cart.cartItems.length > 0 ? (
+                                    <Box sx={{ mt: 1 }}>
+                                        {orderDetails.guest.cart.cartItems.map((item, index) => (
+                                            <Box key={index} sx={{
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center',
+                                                py: 1.5,
+                                                px: 2,
+                                                mb: 1,
+                                                backgroundColor: '#FFF8F0',
+                                                borderRadius: '8px',
+                                                border: '1px solid rgba(211, 33, 45, 0.1)'
+                                            }}>
+                                                <Box sx={{ flex: 1 }}>
+                                                    <Typography variant="body1" sx={{ fontWeight: '500', color: '#333' }}>
+                                                        {item.dish?.dish_name || 'Unknown Dish'}
+                                                    </Typography>
+                                                    <Typography variant="body2" sx={{ color: '#D3212D', fontWeight: '500' }}>
+                                                        {Number(item.dish?.price || 0).toLocaleString('vi-VN')}đ each
+                                                    </Typography>
+                                                </Box>
+                                                <Box sx={{ textAlign: 'right' }}>
+                                                    <Typography variant="body1" sx={{ fontWeight: '600', color: '#333' }}>
+                                                        Qty: {item.quantity}
+                                                    </Typography>
+                                                    <Typography variant="body2" sx={{ color: '#D3212D', fontWeight: '600' }}>
+                                                        {Number((item.dish?.price || 0) * item.quantity).toLocaleString('vi-VN')}đ
+                                                    </Typography>
+                                                </Box>
+                                            </Box>
+                                        ))}
+                                    </Box>
+                                ) : (
+                                    <Typography sx={{ color: 'text.secondary', fontStyle: 'italic' }}>No items found</Typography>
+                                )}
+
+                                <Divider sx={{ my: 2 }} />
+                                <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: '600' }}>Guest Details</Typography>
+                                <Typography><strong>Name:</strong> {orderDetails.guest?.guest_name || 'N/A'}</Typography>
+                                <Typography><strong>Guest ID:</strong> {orderDetails.guest_id}</Typography>
+
+                                <Divider sx={{ my: 2 }} />
+                                <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: '600' }}>Table Details</Typography>
+                                <Typography><strong>Name:</strong> {orderDetails.table?.table_name || 'N/A'}</Typography>
+                                <Typography><strong>Table ID:</strong> {orderDetails.table_id}</Typography>
+                                <Typography><strong>Capacity:</strong> {orderDetails.table?.capacity || 'N/A'}</Typography>
+                                <Typography><strong>Table Status:</strong> {orderDetails.table?.status || 'N/A'}</Typography>
+                                <Typography><strong>Payment Status:</strong> {orderDetails.table?.payment_status || 'N/A'}</Typography>
+
+                                <Divider sx={{ my: 2 }} />
+                                <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: '600' }}>Order Handler</Typography>
+                                <Typography><strong>Email:</strong> {orderDetails.orderHandler?.email || 'N/A'}</Typography>
+                                <Typography><strong>Handler ID:</strong> {orderDetails.order_handler_id || 'N/A'}</Typography>
+                            </>
+                        ) : (
+                            <Typography color="error" sx={{ textAlign: 'center', py: 2 }}>
+                                Failed to load order details
+                            </Typography>
+                        )}
                     </DialogContent>
                     <DialogActions sx={{ padding: theme.spacing(1.5, 3, 2, 3), backgroundColor: '#FFFFFF' }}>
                         <Button onClick={handleCloseDetailModal} sx={{ color: theme.palette.text.secondary, borderRadius: '8px' }}>Close</Button>

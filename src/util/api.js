@@ -42,6 +42,11 @@ const getOrderApi = (params) => {
     return axios.get(URL_API, { params });
 }
 
+const getOrderByIdApi = (orderId) => {
+    const URL_API = `/api/v1/order/${orderId}`;
+    return axios.get(URL_API);
+}
+
 const createOrderApi = (data) => {
     const URL_API = "/api/v1/order";
     return axios.post(URL_API, data);
@@ -111,6 +116,7 @@ export {
     updateAccountApi,
     // Orders
     getOrderApi,
+    getOrderByIdApi,
     createOrderApi,
     updateOrderApi,
     deleteOrderApi,
