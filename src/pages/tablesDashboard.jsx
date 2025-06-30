@@ -49,6 +49,7 @@ import {
     FaCopy,
     FaWifi,
     FaExclamationTriangle,
+    FaClock,
 } from 'react-icons/fa';
 import axios from 'axios';
 import { notification } from 'antd';
@@ -311,7 +312,115 @@ const TablesDashboard = () => {
     };
 
     // Real-time notifications hook
-    const { notifications, isConnected } = useNotifications(fetchTables);
+    const { notifications, isConnected, manualReconnect } = useNotifications(fetchTables);
+
+    // Effect để handle specific notifications và cập nhật table state
+    useEffect(() => {
+        const latestNotification = notifications[0];
+        if (!latestNotification) return;
+
+        switch (latestNotification.type) {
+            case 'GUEST_LOGIN':
+                handleGuestLoginNotification(latestNotification.data);
+                break;
+            case 'TABLE_OCCUPIED':
+                handleTableOccupiedNotification(latestNotification.data);
+                break;
+            case 'GUEST_CHECKOUT':
+                handleGuestCheckoutNotification(latestNotification.data);
+                break;
+            case 'PAYMENT_SUCCESS':
+                handlePaymentSuccessNotification(latestNotification.data);
+                break;
+            case 'TABLE_STATUS_UPDATE':
+                handleTableStatusUpdateNotification(latestNotification.data);
+                break;
+        }
+    }, [notifications]);
+
+    // Handler functions cho từng loại notification
+    const handleGuestLoginNotification = (data) => {
+        if (!data?.table_id) return;
+
+        setTables(prevTables =>
+            prevTables.map(table =>
+                table.table_id === data.table_id
+                    ? {
+                        ...table,
+                        status: data.new_status || 'Unavailable',
+                        payment_status: data.new_payment_status || 'Unpaid',
+                        guest_name: data.guest_name,
+                        guest_id: data.guest_id,
+                        occupied_time: data.timestamp
+                    }
+                    : table
+            )
+        );
+    };
+
+    const handleTableOccupiedNotification = (data) => {
+        if (!data?.table_id) return;
+
+        setTables(prevTables =>
+            prevTables.map(table =>
+                table.table_id === data.table_id
+                    ? {
+                        ...table,
+                        status: data.new_status || 'Unavailable',
+                        guest_name: data.guest_name,
+                        occupied_time: data.timestamp
+                    }
+                    : table
+            )
+        );
+    };
+
+    const handleGuestCheckoutNotification = (data) => {
+        if (!data?.table_id) return;
+
+        setTables(prevTables =>
+            prevTables.map(table =>
+                table.table_id === data.table_id
+                    ? {
+                        ...table,
+                        status: data.new_status || 'Available',
+                        payment_status: data.new_payment_status || 'Paid',
+                        guest_name: null,
+                        guest_id: null,
+                        occupied_time: null
+                    }
+                    : table
+            )
+        );
+    };
+
+    const handlePaymentSuccessNotification = (data) => {
+        if (!data?.table_id) return;
+
+        setTables(prevTables =>
+            prevTables.map(table =>
+                table.table_id === data.table_id
+                    ? {
+                        ...table,
+                        payment_status: 'Paid',
+                        payment_time: data.timestamp
+                    }
+                    : table
+            )
+        );
+    };
+
+    const handleTableStatusUpdateNotification = (data) => {
+        if (!data?.table_id) return;
+
+        setTables(prevTables =>
+            prevTables.map(table =>
+                table.table_id === data.table_id
+                    ? { ...table, ...data }
+                    : table
+            )
+        );
+    };
 
     // Effect để handle connection status
     useEffect(() => {
@@ -658,6 +767,31 @@ const TablesDashboard = () => {
                                                     </Typography>
                                                 </Box>
                                             </InfoRow>
+                                            {table.guest_name && (
+                                                <InfoRow>
+                                                    <FaUserFriends color="#555" />
+                                                    <Typography variant="body2" sx={{ mr: 1 }}>
+                                                        Guest:
+                                                    </Typography>
+                                                    <Typography variant="body2" fontWeight="bold" sx={{ color: '#D3212D' }}>
+                                                        {table.guest_name}
+                                                    </Typography>
+                                                </InfoRow>
+                                            )}
+                                            {table.occupied_time && (
+                                                <InfoRow>
+                                                    <FaClock color="#555" />
+                                                    <Typography variant="body2" sx={{ mr: 1 }}>
+                                                        Since:
+                                                    </Typography>
+                                                    <Typography variant="body2" fontSize="0.75rem" sx={{ color: '#666' }}>
+                                                        {new Date(table.occupied_time).toLocaleTimeString('vi-VN', {
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        })}
+                                                    </Typography>
+                                                </InfoRow>
+                                            )}
                                         </StyledCardContent>
                                         <StyledCardActions>
                                             <Tooltip title="Edit Table">
