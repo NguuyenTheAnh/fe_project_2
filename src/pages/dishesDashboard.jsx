@@ -541,7 +541,8 @@ const DishesDashboard = () => {
     // Function to get image URL
     const getImageUrl = (imageName) => {
         if (!imageName) return 'https://via.placeholder.com/300x225?text=No+Image';
-        return `${import.meta.env.VITE_BACKEND_URL}/api/images/${imageName}`;
+        // return `${import.meta.env.VITE_BACKEND_URL}/images/${imageName}`;
+        return `/images/${imageName}`; //production environment will handle this correctly
     };
 
     return (
