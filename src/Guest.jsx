@@ -51,7 +51,7 @@ const Guest = () => {
 
             setGuestAppLoading(true);
             try {
-                const res = await axiosInstance.get('/api/v1/guest-auth/profile');
+                const res = await axiosInstance.get('/v1/guest-auth/profile');
                 if (res && res.statusCode === 200) {
                     setGuestAuth({
                         isGuestAuthenticated: true,

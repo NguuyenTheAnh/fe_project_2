@@ -43,18 +43,18 @@ instance.interceptors.response.use(
 
             try {
                 // Xử lý refresh token cho management
-                if (originalConfig.url !== '/api/v1/auth/login' && localStorage.getItem('access_token')) {
-                    const rs = await instance.get('/api/v1/auth/refresh');
+                if (originalConfig.url !== '/v1/auth/login' && localStorage.getItem('access_token')) {
+                    const rs = await instance.get('/v1/auth/refresh');
                     localStorage.setItem('access_token', rs.data.access_token);
                     originalConfig.headers.Authorization = `Bearer ${rs.data.access_token}`;
                     return instance(originalConfig);
                 }
                 // Xử lý refresh token cho guest
                 else if (
-                    originalConfig.url !== '/api/v1/guest-auth/login' &&
+                    originalConfig.url !== '/v1/guest-auth/login' &&
                     localStorage.getItem('access_token_guest')
                 ) {
-                    const rs = await instance.get('/api/v1/guest-auth/refresh');
+                    const rs = await instance.get('/v1/guest-auth/refresh');
                     localStorage.setItem('access_token_guest', rs.data.access_token_guest);
                     originalConfig.headers['access_token_guest'] = rs.data.access_token_guest;
                     return instance(originalConfig);
