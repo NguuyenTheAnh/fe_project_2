@@ -118,7 +118,7 @@ export const useNotifications = (onRefreshTables) => {
             const tableName = notificationData.data?.table_name || 'bàn';
 
             notification.info({
-                message: '🔵 Khách hàng đăng nhập',
+                message: 'Guest Login',
                 description: notificationData.message || `${guestName} đã ngồi vào ${tableName}`,
                 placement: 'topRight',
                 duration: 4,
@@ -148,7 +148,7 @@ export const useNotifications = (onRefreshTables) => {
             const tableName = notificationData.data?.table_name || 'bàn';
 
             notification.warning({
-                message: '🟡 Bàn được sử dụng',
+                message: 'Table Occupied',
                 description: notificationData.message || `${tableName} đã được ${guestName} sử dụng`,
                 placement: 'topRight',
                 duration: 4,
@@ -178,7 +178,7 @@ export const useNotifications = (onRefreshTables) => {
             const tableName = notificationData.data?.table_name || 'bàn';
 
             notification.info({
-                message: '🟠 Khách hàng rời bàn',
+                message: 'Guest Checkout',
                 description: notificationData.message || `${guestName} đã rời ${tableName}`,
                 placement: 'topRight',
                 duration: 4,
