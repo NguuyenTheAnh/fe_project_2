@@ -2,6 +2,15 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './styles/global.css';
+import { notification } from 'antd';
+
+// Configure antd notification globally
+notification.config({
+  placement: 'topRight',
+  top: 50,
+  duration: 4.5,
+  rtl: false,
+});
 
 import {
   createBrowserRouter,

@@ -47,11 +47,15 @@ import {
     FaQrcode,
     FaTimes,
     FaCopy,
+    FaWifi,
+    FaExclamationTriangle,
 } from 'react-icons/fa';
 import axios from 'axios';
 import { notification } from 'antd';
 import { createTableApi, deleteTableApi, getTableApi, updateTableApi } from '../util/apiTable';
 import { QRCodeSVG } from 'qrcode.react';
+import { useNotifications } from '../hooks/useNotifications';
+import socket from '../util/socket';
 // Styled components with fixed dimensions
 const TableCardWrapper = styled(Box)(({ theme }) => ({
     width: '100%',
@@ -306,6 +310,16 @@ const TablesDashboard = () => {
         }
     };
 
+    // Real-time notifications hook
+    const { notifications, isConnected } = useNotifications(fetchTables);
+
+    // Effect để handle connection status
+    useEffect(() => {
+        if (!isConnected) {
+            console.log('WebSocket not connected, checking connection...');
+        }
+    }, [isConnected]);
+
     useEffect(() => {
         fetchTables();
     }, [page, limit, status, paymentStatus, sort]);
@@ -507,9 +521,35 @@ const TablesDashboard = () => {
     return (
         <Container maxWidth="xl" sx={{ py: 4 }}>
             <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
-                <Typography variant="h4" component="h1" sx={{ color: '#D3212D', fontWeight: 'bold', mb: { xs: 2, md: 0 } }}>
-                    Table Management
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: { xs: 2, md: 0 } }}>
+                    <Typography variant="h4" component="h1" sx={{ color: '#D3212D', fontWeight: 'bold' }}>
+                        Table Management
+                    </Typography>
+                    <Tooltip title={isConnected ? 'Real-time notifications active' : 'Click to reconnect WebSocket'}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            {isConnected ? (
+                                <FaWifi style={{ color: '#4CAF50', fontSize: '16px' }} />
+                            ) : (
+                                <FaExclamationTriangle
+                                    style={{ color: '#f44336', fontSize: '16px', cursor: 'pointer' }}
+                                    onClick={() => {
+                                        console.log('Attempting to reconnect...');
+                                        socket.connect();
+                                        notification.info({
+                                            message: 'Reconnecting...',
+                                            description: 'Attempting to reconnect to real-time notifications',
+                                            placement: 'topRight',
+                                            duration: 2,
+                                        });
+                                    }}
+                                />
+                            )}
+                            <Typography variant="caption" sx={{ color: isConnected ? '#4CAF50' : '#f44336' }}>
+                                {isConnected ? 'Live' : 'Offline'}
+                            </Typography>
+                        </Box>
+                    </Tooltip>
+                </Box>
                 <AddButton
                     startIcon={<FaPlus />}
                     onClick={() => handleOpenModal()} // Open modal for adding

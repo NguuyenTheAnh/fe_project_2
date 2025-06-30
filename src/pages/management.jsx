@@ -143,7 +143,7 @@ const ManagementPage = () => {
     const [newEmployee, setNewEmployee] = useState({
         email: '',
         password: '',
-        role: 'EMPLOYEE'
+        role: 'Employee'
     });
 
     const fetchEmployees = async () => {
@@ -184,7 +184,7 @@ const ManagementPage = () => {
                     placement: "topRight"
                 });
                 setOpenAddDialog(false);
-                setNewEmployee({ email: '', password: '', role: 'EMPLOYEE' });
+                setNewEmployee({ email: '', password: '', role: 'Employee' });
                 fetchEmployees();
             } else {
                 throw new Error(response?.message || 'Failed to add employee');
@@ -405,17 +405,6 @@ const ManagementPage = () => {
                             margin="normal"
                             sx={{ mb: 2 }}
                         />
-                        <FormControl fullWidth margin="normal">
-                            <InputLabel>Role</InputLabel>
-                            <Select
-                                value={newEmployee.role}
-                                label="Role"
-                                onChange={(e) => setNewEmployee({ ...newEmployee, role: e.target.value })}
-                            >
-                                <MenuItem value="EMPLOYEE">Employee</MenuItem>
-                                <MenuItem value="ADMIN">Admin</MenuItem>
-                            </Select>
-                        </FormControl>
                     </Box>
                 </DialogContent>
                 <DialogActions sx={{ p: 3, gap: 2 }}>
